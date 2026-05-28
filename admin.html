@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>لوحة التحكم - STORE YS CPM</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * { font-family: 'Cairo', sans-serif; }
+        body { background: linear-gradient(135deg, #0a0f1c 0%, #0c1222 100%); }
+        .glass-card { background: rgba(15, 25, 40, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(245, 158, 11, 0.2); }
+        .admin-sidebar { background: linear-gradient(180deg, #0f172a 0%, #020617 100%); }
+        .stat-number { font-feature-settings: "tnum"; font-variant-numeric: tabular-nums; }
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-track { background: #1e293b; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb { background: #f59e0b; border-radius: 10px; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .fade-in { animation: fadeIn 0.3s ease-out; }
+        .btn-press:active { transform: scale(0.97); transition: transform 0.05s; }
+        .user-card:hover { transform: translateY(-2px); transition: all 0.2s; }
+        .modal-overlay { background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(4px); }
+        .message-card { transition: all 0.2s; }
+        .message-card:hover { background: rgba(245, 158, 11, 0.1); }
+        .code-card { transition: all 0.2s; }
+        .code-card:hover { background: rgba(168, 85, 247, 0.1); transform: translateX(-3px); }
+        .usage-log:hover { background: rgba(59, 130, 246, 0.1); }
+    </style>
+</head>
+<body class="text-slate-200">
+
+    <!-- شاشة تسجيل الدخول -->
+    <div id="login-screen" class="fixed inset-0 z-50 flex items-center justify-center p-4" style="background: radial-gradient(circle at 10% 20%, #0a0f1c, #030614);">
+        <div class="max-w-md w-full bg-slate-900/90 backdrop-blur-xl rounded-2xl border border-amber-500/30 shadow-2xl p-6 md:p-8 fade-in">
+            <div class="text-center mb-6">
+                <div class="w-16 h-16 bg-gradient-to-br from-amber-400 to-amber-600 rounded-2xl flex items-center justify-center mx-auto shadow-lg shadow-amber-500/20">
+                    <i class="fas fa-shield-alt text-3xl text-slate-900"></i>
+                </div>
+                <h2 class="text-2xl font-black mt-4 text-white">لوحة التحكم الآمنة</h2>
+                <p class="text-slate-400 text-sm mt-1">المالك فقط | YS CPM</p>
+            </div>
+            <div class="space-y-4">
+                <div class="relative">
+                    <i class="fas fa-lock absolute right-4 top-1/2 -translate-y-1/2 text-amber-500 text-sm"></i>
+                    <input type="password" id="admin-pass-input" placeholder="كلمة المرور السريّة" class="w-full bg-slate-800/80 border border-slate-700 rounded-xl py-3 pr-12 pl-4 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent">
+                </div>
+                <button id="admin-login-trigger" class="w-full bg-amber-500 hover:bg-amber-600 text-slate-950 font-black py-3 rounded-xl transition-all shadow-lg shadow-amber-500/20 btn-press">
+                    <i class="fas fa-key ml-2"></i> دخول إلى الإدارة
+                </button>
+            </div>
+            <p class="text-center text-slate-500 text-xs mt-6 border-t border-slate-800 pt-4">
+                <i class="fas fa-database ml-1"></i> اتصال سحابي مباشر • تحديث لحظي
+            </p>
+        </div>
+    </div>
+
+    <!-- لوحة التحكم الرئيسية -->
+    <div id="admin-dashboard" class="hidden min-h-screen flex flex-col md:flex-row">
+        <!-- شريط جانبي -->
+        <aside class="admin-sidebar w-full md:w-80 p-5 flex flex-col gap-6 border-l border-amber-500/20 shadow-2xl overflow-y-auto">
+            <div class="flex items-center gap-3 pb-4 border-b border-slate-800">
+                <div class="bg-amber-500 w-10 h-10 rounded-xl flex items-center justify-center shadow-md">
+                    <i class="fas fa-crown text-slate-950 text-xl"></i>
+                </div>
+                <div>
+                    <h2 class="font-black text-lg">YS CPM</h2>
+                    <p class="text-amber-400 text-[10px] font-bold">لوحة المالك</p>
+                </div>
+            </div>
+            
+            <div class="space-y-5">
+                <div class="glass-card rounded-xl p-4">
+                    <p class="text-slate-400 text-xs mb-2"><i class="fas fa-chart-line ml-1 text-amber-400"></i> إحصائيات سريعة</p>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div><p class="text-slate-500 text-[10px]">حسابات</p><p id="stat-accounts-count" class="text-2xl font-black text-amber-400 stat-number">0</p></div>
+                        <div><p class="text-slate-500 text-[10px]">مستخدمين</p><p id="stat-users-count" class="text-2xl font-black text-emerald-400 stat-number">0</p></div>
+                        <div><p class="text-slate-500 text-[10px]">مهام</p><p id="stat-tasks-count" class="text-2xl font-black text-sky-400 stat-number">0</p></div>
+                        <div><p class="text-slate-500 text-[10px]">رسائل</p><p id="stat-messages-count" class="text-2xl font-black text-purple-400 stat-number">0</p></div>
+                        <div><p class="text-slate-500 text-[10px]">أكواد</p><p id="stat-codes-count" class="text-2xl font-black text-pink-400 stat-number">0</p></div>
+                    </div>
+                </div>
+                
+                <div class="flex flex-col gap-2">
+                    <button id="nav-add-account" class="admin-nav-btn bg-slate-800/50 hover:bg-amber-500/20 text-right py-2.5 px-4 rounded-xl transition flex items-center gap-3 text-sm font-bold"><i class="fas fa-plus-circle text-amber-400 w-5"></i> إضافة حساب</button>
+                    <button id="nav-tasks-section-btn" class="admin-nav-btn bg-slate-800/50 hover:bg-amber-500/20 text-right py-2.5 px-4 rounded-xl transition flex items-center gap-3 text-sm font-bold"><i class="fas fa-tasks text-sky-400 w-5"></i> إدارة المهام</button>
+                    <button id="nav-users-section-btn" class="admin-nav-btn bg-slate-800/50 hover:bg-amber-500/20 text-right py-2.5 px-4 rounded-xl transition flex items-center gap-3 text-sm font-bold"><i class="fas fa-users text-emerald-400 w-5"></i> إدارة المستخدمين</button>
+                    <button id="nav-messages-section-btn" class="admin-nav-btn bg-slate-800/50 hover:bg-amber-500/20 text-right py-2.5 px-4 rounded-xl transition flex items-center gap-3 text-sm font-bold"><i class="fas fa-envelope text-purple-400 w-5"></i> إدارة الرسائل</button>
+                    <button id="nav-codes-section-btn" class="admin-nav-btn bg-slate-800/50 hover:bg-amber-500/20 text-right py-2.5 px-4 rounded-xl transition flex items-center gap-3 text-sm font-bold"><i class="fas fa-ticket-alt text-pink-400 w-5"></i> إدارة الأكواد</button>
+                    <button id="nav-accounts-list-btn" class="admin-nav-btn bg-slate-800/50 hover:bg-amber-500/20 text-right py-2.5 px-4 rounded-xl transition flex items-center gap-3 text-sm font-bold"><i class="fas fa-database text-purple-400 w-5"></i> قائمة الحسابات</button>
+                </div>
+            </div>
+            
+            <div class="mt-auto pt-6 border-t border-slate-800">
+                <button id="admin-logout-btn" class="w-full bg-red-600/20 hover:bg-red-600 text-red-300 hover:text-white py-2.5 rounded-xl transition flex items-center justify-center gap-2 text-sm font-bold">
+                    <i class="fas fa-sign-out-alt"></i> خروج
+                </button>
+                <a href="index.html" class="block text-center text-slate-500 text-xs mt-3 hover:text-amber-400 transition"><i class="fas fa-store ml-1"></i> المتجر</a>
+            </div>
+        </aside>
+
+        <!-- المحتوى الرئيسي -->
+        <main class="flex-1 p-4 md:p-6 overflow-y-auto">
+            <!-- قسم إضافة حساب -->
+            <div id="add-account-section" class="admin-section fade-in">
+                <div class="glass-card rounded-2xl p-5 md:p-6 border border-amber-500/20">
+                    <div class="flex flex-wrap justify-between items-center mb-5">
+                        <h3 class="text-xl font-black flex items-center gap-2"><i class="fas fa-plus-circle text-amber-400"></i> رفع حساب جديد</h3>
+                        <button id="load-defaults-btn" class="bg-slate-800 hover:bg-slate-700 px-4 py-2 rounded-xl text-sm font-bold transition"><i class="fas fa-upload ml-1"></i> عينات افتراضية</button>
+                    </div>
+                    <form id="admin-add-account-form" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="space-y-1"><label class="text-slate-400 text-sm">اسم الحساب</label><input id="acc-title" type="text" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 focus:ring-2 focus:ring-amber-500" placeholder="مثال: حساب خارق"></div>
+                        <div class="space-y-1"><label class="text-slate-400 text-sm">النقاط</label><input id="acc-points" type="number" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-3" placeholder="نقاط الاستبدال"></div>
+                        <div class="space-y-1"><label class="text-slate-400 text-sm">البريد</label><input id="acc-email" type="email" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-3" placeholder="user@example.com"></div>
+                        <div class="space-y-1"><label class="text-slate-400 text-sm">كلمة المرور</label><input id="acc-password" type="text" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-3" placeholder="********"></div>
+                        <div class="space-y-1"><label class="text-slate-400 text-sm">💰 الكاش</label><input id="acc-money" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-3" placeholder="50M"></div>
+                        <div class="space-y-1"><label class="text-slate-400 text-sm">⭐ الذهب</label><input id="acc-coins" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-3" placeholder="40K"></div>
+                        <div class="space-y-1"><label class="text-slate-400 text-sm">🚗 السيارات</label><input id="acc-cars" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-3" placeholder="بوقاتي, مكلارين"></div>
+                        <div class="space-y-1"><label class="text-slate-400 text-sm">📝 الحالة</label><input id="acc-defect" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-3" placeholder="سليم / به جلتش"></div>
+                        <div class="md:col-span-2"><button type="submit" class="w-full bg-amber-500 hover:bg-amber-600 text-slate-950 font-black py-3 rounded-xl transition btn-press"><i class="fas fa-cloud-upload-alt ml-2"></i> رفع الحساب</button></div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- قسم إدارة المهام -->
+            <div id="tasks-admin-section" class="admin-section hidden fade-in">
+                <div class="glass-card rounded-2xl p-5 md:p-6 border border-sky-500/20">
+                    <h3 class="text-xl font-black flex items-center gap-2 mb-5"><i class="fas fa-tasks text-sky-400"></i> إنشاء مهمة جديدة</h3>
+                    <form id="admin-add-task-form" class="space-y-4">
+                        <div><input id="task-title" type="text" placeholder="عنوان المهمة" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-3"></div>
+                        <div><textarea id="task-description" rows="2" placeholder="وصف المهمة (اختياري)" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-3"></textarea></div>
+                        <div><input id="task-link" type="url" placeholder="رابط المهمة (اختياري)" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-3"></div>
+                        <div><input id="task-points" type="number" placeholder="نقاط المكافأة" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-3"></div>
+                        <button type="submit" class="bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-black py-3 rounded-xl transition btn-press"><i class="fas fa-plus ml-2"></i> إضافة المهمة</button>
+                    </form>
+                    <div class="mt-8"><h4 class="font-bold text-sky-400 mb-3"><i class="fas fa-list ml-1"></i> المهام الحالية</h4><div id="admin-tasks-list-container" class="space-y-2 max-h-80 overflow-y-auto"></div></div>
+                </div>
+            </div>
+
+            <!-- قسم إدارة المستخدمين -->
+            <div id="users-admin-section" class="admin-section hidden fade-in">
+                <div class="glass-card rounded-2xl p-5 md:p-6 border border-emerald-500/20">
+                    <h3 class="text-xl font-black flex items-center gap-2 mb-5"><i class="fas fa-users text-emerald-400"></i> إدارة المستخدمين</h3>
+                    <div id="admin-users-list-container" class="space-y-4 max-h-[70vh] overflow-y-auto"></div>
+                </div>
+            </div>
+
+            <!-- قسم إدارة الرسائل -->
+            <div id="messages-admin-section" class="admin-section hidden fade-in">
+                <div class="glass-card rounded-2xl p-5 md:p-6 border border-purple-500/20">
+                    <h3 class="text-xl font-black flex items-center gap-2 mb-5"><i class="fas fa-envelope text-purple-400"></i> إرسال رسائل للمستخدمين</h3>
+                    
+                    <div class="mb-6">
+                        <label class="block text-slate-400 text-sm mb-2"><i class="fas fa-user ml-1"></i> اختر المستخدم</label>
+                        <select id="message-user-select" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-white">
+                            <option value="">-- اختر مستخدم --</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-6">
+                        <label class="block text-slate-400 text-sm mb-2"><i class="fas fa-tag ml-1"></i> نوع الرسالة</label>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <label class="flex items-center gap-3 p-3 bg-slate-800 rounded-xl cursor-pointer hover:bg-slate-700 transition">
+                                <input type="radio" name="message-type" value="normal" checked class="w-4 h-4 text-amber-500">
+                                <div><p class="font-bold text-blue-400"><i class="fas fa-bell ml-1"></i> رسالة عادية</p><p class="text-slate-500 text-xs">تظهر مع زر إغلاق</p></div>
+                            </label>
+                            <label class="flex items-center gap-3 p-3 bg-slate-800 rounded-xl cursor-pointer hover:bg-slate-700 transition">
+                                <input type="radio" name="message-type" value="mandatory" class="w-4 h-4 text-red-500">
+                                <div><p class="font-bold text-red-400"><i class="fas fa-exclamation-triangle ml-1"></i> رسالة دائمة</p><p class="text-slate-500 text-xs">تمنع استخدام الموقع</p></div>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4"><input type="text" id="message-title" placeholder="عنوان الرسالة" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-3"></div>
+                    <div class="mb-4"><textarea id="message-content" rows="4" placeholder="نص الرسالة" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-3"></textarea></div>
+                    
+                    <div class="flex gap-3">
+                        <button id="send-message-btn" class="flex-1 bg-purple-600 hover:bg-purple-500 text-white font-black py-3 rounded-xl transition btn-press"><i class="fas fa-paper-plane ml-2"></i> إرسال</button>
+                        <button id="clear-message-btn" class="flex-1 bg-slate-700 hover:bg-slate-600 text-slate-300 font-bold py-3 rounded-xl transition btn-press"><i class="fas fa-eraser ml-2"></i> مسح</button>
+                    </div>
+                    
+                    <div class="mt-6 pt-4 border-t border-slate-700">
+                        <h4 class="font-bold text-purple-400 mb-3"><i class="fas fa-history ml-1"></i> الرسائل المرسلة</h4>
+                        <div id="sent-messages-list" class="space-y-2 max-h-60 overflow-y-auto"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========== قسم إدارة أكواد الخصم (مع سجل الاستخدام) ========== -->
+            <div id="codes-admin-section" class="admin-section hidden fade-in">
+                <div class="glass-card rounded-2xl p-5 md:p-6 border border-pink-500/20">
+                    <h3 class="text-xl font-black flex items-center gap-2 mb-5"><i class="fas fa-ticket-alt text-pink-400"></i> إدارة أكواد الخصم</h3>
+                    
+                    <!-- إضافة كود جديد -->
+                    <div class="bg-slate-800/50 rounded-xl p-4 mb-6">
+                        <h4 class="font-bold text-pink-400 mb-3"><i class="fas fa-plus-circle ml-1"></i> إضافة كود جديد</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                            <input type="text" id="new-code-name" placeholder="اسم الكود (مثل: WELCOME100)" class="bg-slate-900 border border-slate-700 rounded-xl p-3 text-right">
+                            <input type="number" id="new-code-points" placeholder="عدد النقاط" class="bg-slate-900 border border-slate-700 rounded-xl p-3 text-right">
+                            <button id="add-code-btn" class="bg-pink-600 hover:bg-pink-500 text-white font-bold py-3 rounded-xl transition btn-press">
+                                <i class="fas fa-plus ml-1"></i> إضافة الكود
+                            </button>
+                        </div>
+                        <p class="text-slate-500 text-xs mt-2"><i class="fas fa-info-circle ml-1"></i> يجب أن يكون اسم الكود كبيراً (UPPERCASE) ولا يحتوي على مسافات</p>
+                    </div>
+                    
+                    <!-- الأكواد المتاحة + سجل الاستخدام جنباً إلى جنب -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <!-- العمود الأيمن: الأكواد المتاحة -->
+                        <div>
+                            <h4 class="font-bold text-pink-400 mb-3"><i class="fas fa-list ml-1"></i> الأكواد المتاحة</h4>
+                            <div id="codes-list-container" class="space-y-2 max-h-80 overflow-y-auto"></div>
+                        </div>
+                        
+                        <!-- العمود الأيسر: سجل استخدام الأكواد -->
+                        <div>
+                            <div class="flex justify-between items-center mb-3">
+                                <h4 class="font-bold text-blue-400"><i class="fas fa-history ml-1"></i> سجل استخدام الأكواد</h4>
+                                <button id="clear-usage-log-btn" class="bg-red-600/70 hover:bg-red-600 text-white text-xs px-3 py-1.5 rounded-lg transition">
+                                    <i class="fas fa-trash-alt ml-1"></i> مسح السجل
+                                </button>
+                            </div>
+                            <div id="code-usage-container" class="space-y-2 max-h-80 overflow-y-auto">
+                                <div class="text-center text-slate-500 py-6">لا توجد سجلات استخدام</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- قسم قائمة الحسابات -->
+            <div id="accounts-list-section" class="admin-section hidden fade-in">
+                <div class="glass-card rounded-2xl p-5 md:p-6 border border-purple-500/20">
+                    <h3 class="text-xl font-black flex items-center gap-2 mb-5"><i class="fas fa-database text-purple-400"></i> جميع الحسابات</h3>
+                    <div id="admin-accounts-list-container" class="space-y-3 max-h-[70vh] overflow-y-auto"></div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- نافذة تأكيد حذف الرسالة -->
+    <div id="delete-message-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 hidden modal-overlay">
+        <div class="bg-slate-900 rounded-2xl max-w-md w-full p-6 border border-red-500/30 fade-in">
+            <div class="text-center mb-4">
+                <i class="fas fa-trash-alt text-5xl text-red-500 mb-3"></i>
+                <h3 class="text-xl font-bold text-white">حذف الرسالة الدائمة</h3>
+                <p class="text-slate-400 text-sm mt-2" id="delete-message-details"></p>
+                <p class="text-amber-400 text-xs mt-2">⚠️ سيتمكن المستخدم من استخدام الموقع مرة أخرى</p>
+            </div>
+            <div class="flex gap-3">
+                <button id="confirm-delete-btn" class="flex-1 bg-red-500 hover:bg-red-600 text-white font-bold py-2.5 rounded-xl transition">تأكيد الحذف</button>
+                <button id="cancel-delete-btn" class="flex-1 bg-slate-700 hover:bg-slate-600 text-slate-300 font-bold py-2.5 rounded-xl transition">إلغاء</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- نافذة تأكيد حذف كود -->
+    <div id="delete-code-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 hidden modal-overlay">
+        <div class="bg-slate-900 rounded-2xl max-w-md w-full p-6 border border-pink-500/30 fade-in">
+            <div class="text-center mb-4">
+                <i class="fas fa-trash-alt text-5xl text-pink-500 mb-3"></i>
+                <h3 class="text-xl font-bold text-white">حذف الكود</h3>
+                <p class="text-slate-400 text-sm mt-2" id="delete-code-details"></p>
+                <p class="text-amber-400 text-xs mt-2">⚠️ المستخدمون لن يتمكنوا من استخدام هذا الكود بعد الحذف</p>
+            </div>
+            <div class="flex gap-3">
+                <button id="confirm-delete-code-btn" class="flex-1 bg-pink-500 hover:bg-pink-600 text-white font-bold py-2.5 rounded-xl transition">تأكيد الحذف</button>
+                <button id="cancel-delete-code-btn" class="flex-1 bg-slate-700 hover:bg-slate-600 text-slate-300 font-bold py-2.5 rounded-xl transition">إلغاء</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- نافذة تأكيد إرسال الرسالة -->
+    <div id="confirm-message-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 hidden modal-overlay">
+        <div class="bg-slate-900 rounded-2xl max-w-md w-full p-6 border border-amber-500/30 fade-in">
+            <div class="text-center mb-4">
+                <i class="fas fa-paper-plane text-5xl text-amber-500 mb-3"></i>
+                <h3 class="text-xl font-bold text-white">تأكيد إرسال الرسالة</h3>
+                <p class="text-slate-400 text-sm mt-2" id="confirm-message-details"></p>
+            </div>
+            <div class="flex gap-3">
+                <button id="confirm-send-btn" class="flex-1 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold py-2.5 rounded-xl transition">تأكيد الإرسال</button>
+                <button id="cancel-send-btn" class="flex-1 bg-slate-700 hover:bg-slate-600 text-slate-300 font-bold py-2.5 rounded-xl transition">إلغاء</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- نافذة تأكيد مسح سجل الاستخدام -->
+    <div id="clear-usage-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 hidden modal-overlay">
+        <div class="bg-slate-900 rounded-2xl max-w-md w-full p-6 border border-red-500/30 fade-in">
+            <div class="text-center mb-4">
+                <i class="fas fa-trash-alt text-5xl text-red-500 mb-3"></i>
+                <h3 class="text-xl font-bold text-white">مسح سجل استخدام الأكواد</h3>
+                <p class="text-slate-400 text-sm mt-2">هل أنت متأكد من مسح كل سجلات استخدام الأكواد؟</p>
+                <p class="text-amber-400 text-xs mt-2">⚠️ هذا الإجراء لا يمكن التراجع عنه</p>
+            </div>
+            <div class="flex gap-3">
+                <button id="confirm-clear-usage-btn" class="flex-1 bg-red-500 hover:bg-red-600 text-white font-bold py-2.5 rounded-xl transition">تأكيد المسح</button>
+                <button id="cancel-clear-usage-btn" class="flex-1 bg-slate-700 hover:bg-slate-600 text-slate-300 font-bold py-2.5 rounded-xl transition">إلغاء</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast-message" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-900 border border-amber-500 text-white px-5 py-2.5 rounded-full shadow-xl text-sm font-bold z-50 transition-all duration-300 translate-y-20 opacity-0 pointer-events-none"></div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, doc, addDoc, deleteDoc, updateDoc, onSnapshot, setDoc, getDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBpWkS2skCrg8YZzfPoDmUhLreDdmOcKLg",
+            authDomain: "ys-cpm.firebaseapp.com",
+            projectId: "ys-cpm",
+            storageBucket: "ys-cpm.firebasestorage.app",
+            messagingSenderId: "1041449442787",
+            appId: "1:1041449442787:web:5a3c7762ff5e8ab58354d6"
+        };
+        const ADMIN_PASSWORD = "792013";
+        let app, auth, db;
+        let accounts = [], tasks = [], users = [], promoCode = null;
+        let codeUsageLogs = []; // سجل استخدام الأكواد
+
+        function showToast(msg, isError = false) {
+            const toast = document.getElementById('toast-message');
+            toast.innerText = msg;
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+            if (isError) toast.classList.add('border-red-500');
+            else toast.classList.remove('border-red-500');
+            setTimeout(() => { toast.classList.add('translate-y-20', 'opacity-0'); }, 2500);
+        }
+
+        async function initAdminFirebase() {
+            app = initializeApp(firebaseConfig);
+            auth = getAuth(app);
+            db = getFirestore(app);
+            await signInAnonymously(auth);
+            
+            onSnapshot(collection(db, 'cpm_accounts'), snap => { accounts = snap.docs.map(d => ({ id: d.id, ...d.data() })); renderAccountsList(); updateSidebarStats(); });
+            onSnapshot(collection(db, 'tasks'), snap => { tasks = snap.docs.map(d => ({ id: d.id, ...d.data() })); renderTasksList(); updateSidebarStats(); });
+            onSnapshot(collection(db, 'users'), snap => { users = snap.docs.map(d => ({ id: d.id, ...d.data() })); renderUsersList(); updateUserSelect(); updateSidebarStats(); });
+            onSnapshot(collection(db, 'admin_messages'), snap => {
+                const messages = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a,b) => b.createdAt - a.createdAt);
+                renderSentMessages(messages);
+                updateSidebarStats();
+            });
+            
+            // الاستماع للأكواد من Firebase
+            const codesRef = doc(db, 'settings', 'promoCodes');
+            onSnapshot(codesRef, (snapshot) => {
+                if (snapshot.exists()) {
+                    promoCode = snapshot.data();
+                } else {
+                    setDoc(codesRef, {
+                        codes: {
+                            "WELCOME100": 100,
+                            "VIP500": 500,
+                            "FREE50": 50,
+                            "YS200": 200,
+                            "CPM300": 300,
+                            "START1000": 1000
+                        }
+                    }).catch(console.error);
+                    promoCode = { codes: {
+                        "WELCOME100": 100,
+                        "VIP500": 500,
+                        "FREE50": 50,
+                        "YS200": 200,
+                        "CPM300": 300,
+                        "START1000": 1000
+                    } };
+                }
+                renderCodesList();
+                updateSidebarStats();
+            });
+            
+            // الاستماع لسجل استخدام الأكواد
+            const usageRef = collection(db, 'codeUsage');
+            const usageQuery = query(usageRef, orderBy('usedAt', 'desc'));
+            onSnapshot(usageQuery, (snapshot) => {
+                codeUsageLogs = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+                renderCodeUsageLogs();
+            });
+        }
+
+        function updateSidebarStats() {
+            document.getElementById('stat-accounts-count') && (document.getElementById('stat-accounts-count').innerText = accounts.length);
+            document.getElementById('stat-users-count') && (document.getElementById('stat-users-count').innerText = users.length);
+            document.getElementById('stat-tasks-count') && (document.getElementById('stat-tasks-count').innerText = tasks.length);
+            if (promoCode && promoCode.codes) {
+                document.getElementById('stat-codes-count') && (document.getElementById('stat-codes-count').innerText = Object.keys(promoCode.codes).length);
+            }
+        }
+
+        // عرض سجل استخدام الأكواد
+        function renderCodeUsageLogs() {
+            const container = document.getElementById('code-usage-container');
+            if (!container) return;
+            
+            if (codeUsageLogs.length === 0) {
+                container.innerHTML = '<div class="text-center text-slate-500 py-6"><i class="fas fa-receipt text-2xl mb-2 block"></i>لا توجد سجلات استخدام</div>';
+                return;
+            }
+            
+            container.innerHTML = codeUsageLogs.map(log => `
+                <div class="usage-log bg-slate-800/50 rounded-xl p-3 border border-blue-500/20 hover:border-blue-500/40 transition">
+                    <div class="flex justify-between items-start flex-wrap gap-2">
+                        <div>
+                            <span class="text-pink-400 font-mono text-sm font-bold">${escapeHtml(log.codeName)}</span>
+                            <span class="text-emerald-400 text-xs mx-2">+${log.pointsEarned} نقطة</span>
+                        </div>
+                        <span class="text-slate-500 text-[10px]">${new Date(log.usedAt).toLocaleString('ar')}</span>
+                    </div>
+                    <div class="flex justify-between items-center mt-2 text-xs">
+                        <span class="text-blue-400"><i class="fas fa-user ml-1"></i> ${escapeHtml(log.userName || log.userId.substring(0, 12))}</span>
+                        <span class="text-slate-500 font-mono text-[9px]">ID: ${log.userId.substring(0, 8)}...</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        // مسح سجل الاستخدام بالكامل
+        async function clearAllUsageLogs() {
+            try {
+                const logsRef = collection(db, 'codeUsage');
+                const snapshot = await getDocs(logsRef);
+                const deletePromises = snapshot.docs.map(doc => deleteDoc(doc.ref));
+                await Promise.all(deletePromises);
+                showToast('✅ تم مسح سجل الاستخدام بالكامل');
+            } catch(e) {
+                console.error(e);
+                showToast('❌ فشل مسح السجل', true);
+            }
+        }
+
+        // ========== إدارة الأكواد مع إحصائيات الاستخدام ==========
+        function renderCodesList() {
+            const container = document.getElementById('codes-list-container');
+            if (!container) return;
+            
+            if (!promoCode || !promoCode.codes || Object.keys(promoCode.codes).length === 0) {
+                container.innerHTML = '<div class="text-center text-slate-500 py-10"><i class="fas fa-ticket-alt text-3xl mb-2 block"></i>لا توجد أكواد حالياً</div>';
+                return;
+            }
+            
+            const codes = promoCode.codes;
+            const codesArray = Object.entries(codes);
+            
+            // حساب عدد مرات استخدام كل كود
+            const usageCounts = {};
+            codeUsageLogs.forEach(log => {
+                usageCounts[log.codeName] = (usageCounts[log.codeName] || 0) + 1;
+            });
+            
+            container.innerHTML = codesArray.map(([codeName, points]) => {
+                const usedCount = usageCounts[codeName] || 0;
+                return `
+                    <div class="code-card bg-slate-800/50 rounded-xl p-4 flex flex-wrap justify-between items-center gap-3 border border-pink-500/30 hover:border-pink-500/70 transition">
+                        <div class="flex items-center gap-3">
+                            <div class="w-12 h-12 bg-pink-500/20 rounded-xl flex items-center justify-center">
+                                <i class="fas fa-ticket-alt text-pink-400 text-xl"></i>
+                            </div>
+                            <div>
+                                <p class="font-bold text-white text-lg font-mono">${escapeHtml(codeName)}</p>
+                                <div class="flex gap-2 mt-1">
+                                    <span class="text-pink-400 text-sm">🎁 ${points} نقطة</span>
+                                    <span class="text-blue-400 text-xs bg-blue-500/20 px-2 py-0.5 rounded-full"><i class="fas fa-users ml-1"></i> استخدم ${usedCount} مرة</span>
+                                </div>
+                            </div>
+                        </div>
+                        <button onclick="window.adminDeleteCode('${codeName}')" class="bg-red-600/80 hover:bg-red-600 px-4 py-2 rounded-xl text-sm font-bold transition">
+                            <i class="fas fa-trash-alt ml-1"></i> حذف
+                        </button>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // إضافة كود جديد
+        async function addNewCode(codeName, points) {
+            if (!codeName || !points) {
+                showToast('⚠️ يرجى إدخال اسم الكود وعدد النقاط', true);
+                return false;
+            }
+            
+            const upperCode = codeName.toUpperCase().trim();
+            if (upperCode.includes(' ')) {
+                showToast('⚠️ اسم الكود يجب ألا يحتوي على مسافات', true);
+                return false;
+            }
+            
+            const codesRef = doc(db, 'settings', 'promoCodes');
+            const currentData = promoCode || { codes: {} };
+            const currentCodes = currentData.codes || {};
+            
+            if (currentCodes[upperCode]) {
+                showToast('⚠️ هذا الكود موجود بالفعل', true);
+                return false;
+            }
+            
+            const newCodes = { ...currentCodes, [upperCode]: parseInt(points) };
+            
+            try {
+                await setDoc(codesRef, { codes: newCodes });
+                showToast(`✅ تم إضافة الكود ${upperCode} بنجاح`);
+                return true;
+            } catch (e) {
+                console.error(e);
+                showToast('❌ فشل إضافة الكود', true);
+                return false;
+            }
+        }
+
+        // حذف كود
+        window.adminDeleteCode = async (codeName) => {
+            document.getElementById('delete-code-details').innerHTML = `
+                <strong>الكود:</strong> ${codeName}<br>
+                <strong>النقاط:</strong> ${promoCode?.codes[codeName] || '?'} نقطة<br>
+                <strong>عدد مرات الاستخدام:</strong> ${codeUsageLogs.filter(l => l.codeName === codeName).length} مرة
+            `;
+            
+            const modal = document.getElementById('delete-code-modal');
+            modal.classList.remove('hidden');
+            
+            const confirmBtn = document.getElementById('confirm-delete-code-btn');
+            const cancelBtn = document.getElementById('cancel-delete-code-btn');
+            
+            const handleConfirm = async () => {
+                try {
+                    const codesRef = doc(db, 'settings', 'promoCodes');
+                    const currentCodes = promoCode?.codes || {};
+                    const newCodes = { ...currentCodes };
+                    delete newCodes[codeName];
+                    await setDoc(codesRef, { codes: newCodes });
+                    showToast(`✅ تم حذف الكود ${codeName}`);
+                    modal.classList.add('hidden');
+                } catch(e) {
+                    console.error(e);
+                    showToast('❌ فشل حذف الكود', true);
+                }
+                cleanup();
+            };
+            
+            const handleCancel = () => {
+                modal.classList.add('hidden');
+                cleanup();
+            };
+            
+            const cleanup = () => {
+                confirmBtn.removeEventListener('click', handleConfirm);
+                cancelBtn.removeEventListener('click', handleCancel);
+            };
+            
+            confirmBtn.addEventListener('click', handleConfirm, { once: true });
+            cancelBtn.addEventListener('click', handleCancel, { once: true });
+        };
+
+        function updateUserSelect() {
+            const select = document.getElementById('message-user-select');
+            if(!select) return;
+            select.innerHTML = '<option value="">-- اختر مستخدم --</option>';
+            users.forEach(user => {
+                const userName = user.profileName || user.id.substring(0, 12);
+                select.innerHTML += `<option value="${user.id}">${userName} (${user.points || 0} نقطة)</option>`;
+            });
+        }
+
+        function renderAccountsList() {
+            const container = document.getElementById('admin-accounts-list-container');
+            if(!container) return;
+            if(accounts.length === 0) { container.innerHTML = '<div class="text-center text-slate-500 py-10"><i class="fas fa-box-open text-3xl mb-2 block"></i>لا توجد حسابات</div>'; return; }
+            container.innerHTML = accounts.map(acc => `
+                <div class="bg-slate-800/50 rounded-xl p-4 flex flex-wrap justify-between items-center gap-3 border border-slate-700/50 hover:border-amber-500/30 transition">
+                    <div><p class="font-bold text-white">${escapeHtml(acc.title)}</p><p class="text-amber-400 text-sm">${acc.points || 0} نقطة</p><p class="text-slate-400 text-xs truncate">📧 ${acc.email || 'لا يوجد'}</p></div>
+                    <button onclick="window.adminDeleteAccount('${acc.id}')" class="bg-red-600/80 hover:bg-red-600 px-4 py-2 rounded-xl text-sm font-bold transition"><i class="fas fa-trash-alt ml-1"></i> حذف</button>
+                </div>`).join('');
+        }
+
+        function renderTasksList() {
+            const container = document.getElementById('admin-tasks-list-container');
+            if(!container) return;
+            if(tasks.length === 0) { container.innerHTML = '<div class="text-center text-slate-500 py-6">لا توجد مهام</div>'; return; }
+            container.innerHTML = tasks.map(task => `
+                <div class="bg-slate-800/50 rounded-xl p-3 flex justify-between items-center gap-3">
+                    <div><p class="font-bold">${escapeHtml(task.title)}</p><p class="text-sky-400 text-xs">+${task.points || 0} نقطة</p></div>
+                    <button onclick="window.adminDeleteTask('${task.id}')" class="bg-red-600/70 hover:bg-red-600 px-3 py-1.5 rounded-lg text-sm"><i class="fas fa-times"></i></button>
+                </div>`).join('');
+        }
+
+        function renderUsersList() {
+            const container = document.getElementById('admin-users-list-container');
+            if(!container) return;
+            if(users.length === 0) { container.innerHTML = '<div class="text-center text-slate-500 py-10"><i class="fas fa-user-slash text-3xl mb-2 block"></i>لا يوجد مستخدمين</div>'; return; }
+            
+            container.innerHTML = users.map(user => {
+                const hasProfile = user.profileName && user.profileName.trim() !== '';
+                const hasActiveMessage = user.activeMessage && user.activeMessage.type === 'mandatory' && !user.activeMessage.dismissed;
+                return `
+                    <div class="user-card bg-slate-800/50 rounded-xl p-4 border ${hasActiveMessage ? 'border-red-500/50 shadow-lg shadow-red-500/20' : (hasProfile ? 'border-emerald-500/30' : 'border-slate-700/50')} transition">
+                        <div class="flex flex-wrap gap-4">
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center gap-2 mb-2 flex-wrap">
+                                    <i class="fas ${hasProfile ? 'fa-user-check text-emerald-400' : 'fa-user-clock text-amber-400'}"></i>
+                                    <span class="font-mono text-xs text-slate-400">ID: ${user.id.substring(0, 12)}...</span>
+                                    ${hasActiveMessage ? `<span class="bg-red-500/30 text-red-400 text-[10px] px-2 py-0.5 rounded-full"><i class="fas fa-exclamation-circle ml-1"></i> معطل</span>` : ''}
+                                </div>
+                                ${hasProfile ? `
+                                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-3">
+                                        <div class="bg-slate-900/50 rounded-lg p-2"><p class="text-slate-500 text-[10px]">الاسم</p><p class="text-white font-bold text-sm">${escapeHtml(user.profileName)}</p></div>
+                                        <div class="bg-slate-900/50 rounded-lg p-2"><p class="text-slate-500 text-[10px]">العمر</p><p class="text-white font-bold text-sm">${escapeHtml(user.profileAge)} سنة</p></div>
+                                        <div class="bg-slate-900/50 rounded-lg p-2"><p class="text-slate-500 text-[10px]">الهاتف</p><p class="text-white font-bold text-sm">${escapeHtml(user.profilePhone)}</p></div>
+                                    </div>
+                                ` : `<div class="bg-slate-900/50 rounded-lg p-3 mt-2 text-center"><i class="fas fa-info-circle text-amber-400 text-sm"></i><p class="text-slate-400 text-xs mt-1">لم يملأ البيانات بعد</p></div>`}
+                                ${hasActiveMessage ? `
+                                    <div class="bg-red-900/40 border border-red-500/40 rounded-lg p-3 mt-3">
+                                        <p class="text-red-400 text-sm font-bold"><i class="fas fa-envelope ml-1"></i> الرسالة:</p>
+                                        <p class="text-white text-sm mt-1"><strong>${escapeHtml(user.activeMessage.title)}</strong></p>
+                                        <p class="text-slate-300 text-xs mt-1">${escapeHtml(user.activeMessage.content)}</p>
+                                        <button onclick="window.adminDeleteUserMessage('${user.id}')" class="mt-3 w-full bg-red-600 hover:bg-red-700 text-white text-sm px-4 py-2 rounded-lg transition btn-press"><i class="fas fa-trash-alt"></i> حذف الرسالة</button>
+                                    </div>
+                                ` : ''}
+                                <div class="flex flex-wrap items-center justify-between gap-3 mt-3 pt-2 border-t border-slate-700/50">
+                                    <div class="flex gap-3"><div><span class="text-slate-500 text-[10px]">⭐ النقاط</span><p class="text-amber-400 font-bold">${user.points || 0}</p></div>
+                                    <div><span class="text-slate-500 text-[10px]">📋 مهام</span><p class="text-emerald-400 font-bold">${user.completedTasks?.length || 0}</p></div>
+                                    <div><span class="text-slate-500 text-[10px]">🎫 أكواد</span><p class="text-pink-400 font-bold">${user.usedCodes?.length || 0}</p></div>
+                                    </div>
+                                    <div class="flex gap-2"><input id="edit-points-${user.id}" type="number" value="${user.points || 0}" class="w-24 bg-slate-900 border border-slate-600 rounded-lg p-2 text-center"><button onclick="window.adminUpdateUserPoints('${user.id}')" class="bg-amber-500 text-slate-950 px-4 py-2 rounded-lg font-bold text-sm"><i class="fas fa-save"></i> حفظ</button></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderSentMessages(messages) {
+            const container = document.getElementById('sent-messages-list');
+            const countSpan = document.getElementById('stat-messages-count');
+            if(countSpan) countSpan.innerText = messages.length;
+            if(!container) return;
+            if(messages.length === 0) { container.innerHTML = '<div class="text-center text-slate-500 py-4">لا توجد رسائل مرسلة</div>'; return; }
+            container.innerHTML = messages.slice(0, 10).map(msg => `
+                <div class="message-card bg-slate-800/50 rounded-lg p-3 text-sm">
+                    <div class="flex justify-between items-start">
+                        <div><span class="text-amber-400 text-xs">${new Date(msg.createdAt).toLocaleString('ar')}</span></div>
+                        <span class="${msg.type === 'mandatory' ? 'text-red-400 bg-red-500/20' : 'text-blue-400 bg-blue-500/20'} text-[10px] px-2 py-0.5 rounded-full">${msg.type === 'mandatory' ? '⚠️ إجباري' : '📢 عادي'}</span>
+                    </div>
+                    <p class="font-bold text-white mt-1">${escapeHtml(msg.title)}</p>
+                    <p class="text-slate-400 text-xs mt-1">${escapeHtml(msg.content.substring(0, 80))}${msg.content.length > 80 ? '...' : ''}</p>
+                    <p class="text-slate-500 text-[10px] mt-1"><i class="fas fa-user ml-1"></i> إلى: ${msg.userName || msg.userId.substring(0, 8)}</p>
+                </div>
+            `).join('');
+        }
+
+        window.adminDeleteUserMessage = async (userId) => {
+            const user = users.find(u => u.id === userId);
+            document.getElementById('delete-message-details').innerHTML = `<strong>المستخدم:</strong> ${user?.profileName || userId.substring(0, 12)}`;
+            const modal = document.getElementById('delete-message-modal');
+            modal.classList.remove('hidden');
+            const confirmBtn = document.getElementById('confirm-delete-btn');
+            const cancelBtn = document.getElementById('cancel-delete-btn');
+            const handleConfirm = async () => {
+                try {
+                    await updateDoc(doc(db, 'users', userId), { activeMessage: null, siteBlocked: false });
+                    showToast(`✅ تم إلغاء تعطيل المستخدم`);
+                    modal.classList.add('hidden');
+                } catch(e) { showToast('❌ فشل', true); }
+                cleanup();
+            };
+            const handleCancel = () => { modal.classList.add('hidden'); cleanup(); };
+            const cleanup = () => {
+                confirmBtn.removeEventListener('click', handleConfirm);
+                cancelBtn.removeEventListener('click', handleCancel);
+            };
+            confirmBtn.addEventListener('click', handleConfirm, { once: true });
+            cancelBtn.addEventListener('click', handleCancel, { once: true });
+        };
+
+        async function sendMessageToUser(userId, title, content, type) {
+            const user = users.find(u => u.id === userId);
+            const userRef = doc(db, 'users', userId);
+            await addDoc(collection(db, 'admin_messages'), { userId, userName: user?.profileName || userId.substring(0, 12), title, content, type, createdAt: new Date().toISOString(), timestamp: Date.now() });
+            if (type === 'mandatory') {
+                await updateDoc(userRef, { activeMessage: { title, content, type, dismissed: false, sentAt: new Date().toISOString() }, siteBlocked: true });
+            } else {
+                const currentNotifications = user?.notifications || [];
+                await updateDoc(userRef, { notifications: [{ id: Date.now(), title, content, type: 'normal', read: false, createdAt: new Date().toISOString() }, ...currentNotifications.slice(0, 49)] });
+            }
+            return true;
+        }
+
+        async function addAccount(data) { try { await addDoc(collection(db, 'cpm_accounts'), { ...data, createdAt: new Date().toISOString() }); showToast('✅ تم الرفع'); return true; } catch(e) { showToast('❌ فشل', true); return false; } }
+        window.adminDeleteAccount = async (id) => { if(confirm('⚠️ هل أنت متأكد؟')) { try { await deleteDoc(doc(db, 'cpm_accounts', id)); showToast('✅ تم الحذف'); } catch(e) { showToast('❌ فشل', true); } } };
+        window.adminDeleteTask = async (id) => { if(confirm('⚠️ حذف المهمة؟')) { try { await deleteDoc(doc(db, 'tasks', id)); showToast('✅ تم الحذف'); } catch(e) { showToast('❌ فشل', true); } } };
+        window.adminUpdateUserPoints = async (userId) => { const val = document.getElementById(`edit-points-${userId}`)?.value; if(val === undefined) return; try { await updateDoc(doc(db, 'users', userId), { points: parseInt(val) || 0 }); showToast('✅ تم التحديث'); } catch(e) { showToast('❌ فشل', true); } };
+        async function addTaskToDb(data) { try { await addDoc(collection(db, 'tasks'), { title: data.title, description: data.description||'', link: data.link||'', points: Number(data.points)||0, createdAt: new Date().toISOString() }); showToast('✅ تم الإضافة'); } catch(e) { showToast('❌ فشل', true); } }
+        async function loadDefaultAccounts() {
+            const defaults = [
+                { title: "🔥 حساب بوقاتي جلتش", points: 150, email: "bugatti@cpm.com", password: "Pass123", money: "50M", coins: "50K", cars: "بوقاتي كروم", defect: "جلتش سرعة" },
+                { title: "💎 حساب سليم كامل", points: 200, email: "clean@cpm.com", password: "Secure456", money: "45M", coins: "15K", cars: "كل السيارات", defect: "سليم 100%" },
+                { title: "🎁 حساب مجاني VIP", points: 0, email: "freevip@cpm.com", password: "FreeVIP123", money: "30M", coins: "10K", cars: "مكلارين", defect: "سليم" }
+            ];
+            for(const acc of defaults) await addAccount(acc);
+            showToast('✅ تم رفع العينات');
+        }
+
+        function showSection(sectionId) {
+            document.querySelectorAll('.admin-section').forEach(sec => sec.classList.add('hidden'));
+            document.getElementById(sectionId)?.classList.remove('hidden');
+        }
+        
+        function escapeHtml(str) { if(!str) return ''; return String(str).replace(/[&<>]/g, function(m) { if(m === '&') return '&amp;'; if(m === '<') return '&lt;'; if(m === '>') return '&gt;'; return m;}); }
+
+        let pendingMessage = null;
+        function openConfirmModal() { document.getElementById('confirm-message-modal').classList.remove('hidden'); }
+        function closeConfirmModal() { document.getElementById('confirm-message-modal').classList.add('hidden'); pendingMessage = null; }
+
+        // سجل استخدام الأكواد - نافذة تأكيد المسح
+        let pendingClearUsage = false;
+        function openClearUsageModal() { document.getElementById('clear-usage-modal').classList.remove('hidden'); }
+        function closeClearUsageModal() { document.getElementById('clear-usage-modal').classList.add('hidden'); }
+
+        document.getElementById('add-code-btn')?.addEventListener('click', async () => {
+            const codeName = document.getElementById('new-code-name').value.trim();
+            const points = document.getElementById('new-code-points').value;
+            if (!codeName || !points) { showToast('⚠️ أدخل اسم الكود والنقاط', true); return; }
+            await addNewCode(codeName, parseInt(points));
+            document.getElementById('new-code-name').value = '';
+            document.getElementById('new-code-points').value = '';
+        });
+
+        document.getElementById('send-message-btn')?.addEventListener('click', () => {
+            const userId = document.getElementById('message-user-select').value;
+            const title = document.getElementById('message-title').value.trim();
+            const content = document.getElementById('message-content').value.trim();
+            const type = document.querySelector('input[name="message-type"]:checked')?.value;
+            if(!userId) { showToast('⚠️ اختر مستخدم', true); return; }
+            if(!title) { showToast('⚠️ أدخل عنوان', true); return; }
+            if(!content) { showToast('⚠️ أدخل نص', true); return; }
+            const user = users.find(u => u.id === userId);
+            document.getElementById('confirm-message-details').innerHTML = `<strong>إلى:</strong> ${user?.profileName || 'المستخدم'}<br><strong>النوع:</strong> ${type === 'mandatory' ? '🔴 رسالة دائمة' : '🔵 رسالة عادية'}<br><strong>العنوان:</strong> ${title}`;
+            pendingMessage = { userId, title, content, type };
+            openConfirmModal();
+        });
+        
+        document.getElementById('confirm-send-btn')?.addEventListener('click', async () => {
+            if(pendingMessage) {
+                try { await sendMessageToUser(pendingMessage.userId, pendingMessage.title, pendingMessage.content, pendingMessage.type); showToast('✅ تم الإرسال'); document.getElementById('message-title').value = ''; document.getElementById('message-content').value = ''; } catch(e) { showToast('❌ فشل', true); }
+            }
+            closeConfirmModal();
+            pendingMessage = null;
+        });
+        
+        document.getElementById('cancel-send-btn')?.addEventListener('click', closeConfirmModal);
+        document.getElementById('clear-message-btn')?.addEventListener('click', () => {
+            document.getElementById('message-title').value = '';
+            document.getElementById('message-content').value = '';
+            document.querySelector('input[name="message-type"][value="normal"]').checked = true;
+            showToast('🔄 تم المسح');
+        });
+        
+        // مسح سجل الاستخدام
+        document.getElementById('clear-usage-log-btn')?.addEventListener('click', openClearUsageModal);
+        document.getElementById('confirm-clear-usage-btn')?.addEventListener('click', async () => {
+            await clearAllUsageLogs();
+            closeClearUsageModal();
+        });
+        document.getElementById('cancel-clear-usage-btn')?.addEventListener('click', closeClearUsageModal);
+
+        document.getElementById('admin-login-trigger')?.addEventListener('click', async () => {
+            const pass = document.getElementById('admin-pass-input').value;
+            if(pass === ADMIN_PASSWORD) {
+                document.getElementById('login-screen').style.display = 'none';
+                document.getElementById('admin-dashboard').classList.remove('hidden');
+                await initAdminFirebase();
+                showToast('🔓 مرحباً أيها المالك');
+            } else { showToast('❌ كلمة المرور خاطئة', true); }
+        });
+        
+        document.getElementById('admin-logout-btn')?.addEventListener('click', () => {
+            document.getElementById('admin-dashboard').classList.add('hidden');
+            document.getElementById('login-screen').style.display = 'flex';
+            showToast('👋 تم الخروج');
+        });
+        
+        document.getElementById('nav-add-account')?.addEventListener('click', () => showSection('add-account-section'));
+        document.getElementById('nav-tasks-section-btn')?.addEventListener('click', () => showSection('tasks-admin-section'));
+        document.getElementById('nav-users-section-btn')?.addEventListener('click', () => showSection('users-admin-section'));
+        document.getElementById('nav-messages-section-btn')?.addEventListener('click', () => showSection('messages-admin-section'));
+        document.getElementById('nav-codes-section-btn')?.addEventListener('click', () => showSection('codes-admin-section'));
+        document.getElementById('nav-accounts-list-btn')?.addEventListener('click', () => showSection('accounts-list-section'));
+        document.getElementById('load-defaults-btn')?.addEventListener('click', () => loadDefaultAccounts());
+        
+        document.getElementById('admin-add-account-form')?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const account = {
+                title: document.getElementById('acc-title').value,
+                points: parseInt(document.getElementById('acc-points').value) || 0,
+                email: document.getElementById('acc-email').value,
+                password: document.getElementById('acc-password').value,
+                money: document.getElementById('acc-money').value,
+                coins: document.getElementById('acc-coins').value,
+                cars: document.getElementById('acc-cars').value,
+                defect: document.getElementById('acc-defect').value
+            };
+            if(!account.title) { showToast('⚠️ اسم الحساب مطلوب', true); return; }
+            await addAccount(account);
+            e.target.reset();
+        });
+        
+        document.getElementById('admin-add-task-form')?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const tData = {
+                title: document.getElementById('task-title').value.trim(),
+                description: document.getElementById('task-description').value.trim(),
+                link: document.getElementById('task-link').value.trim(),
+                points: parseInt(document.getElementById('task-points').value) || 0
+            };
+            if(!tData.title) { showToast('⚠️ عنوان المهمة مطلوب', true); return; }
+            await addTaskToDb(tData);
+            e.target.reset();
+        });
+        
+        // استيراد الدالة getDocs
+        import { getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        window.getDocs = getDocs;
+        
+        setTimeout(() => { if(document.getElementById('admin-dashboard')?.classList.contains('hidden') === false) showSection('add-account-section'); }, 100);
+    </script>
+</body>
+</html>
